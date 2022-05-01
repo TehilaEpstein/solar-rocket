@@ -46,6 +46,7 @@ input MissionSortOptions {
 enum MissionSortFields {
   Title
   Date
+  Operator
 }
 
 type Mission {

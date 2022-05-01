@@ -38,7 +38,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
 import { ListMenu } from "../components/ListMenu";
 
-type SortField = "Title" | "Date";
+type SortField = "Title" | "Date" | "Operator";
 
 interface MissionsResponse {
   data: {
@@ -55,7 +55,7 @@ const getMissions = async (
   {
     Missions(
       sort: {
-        field: ${sortField}
+        field: ${sortField} 
       }
     ) {
       id
@@ -93,6 +93,10 @@ const Missions = (): JSX.Element => {
     setNewMissionOpen(false);
   };
 
+  const handleNewMissionSave = () => {
+    setNewMissionOpen(false);
+  };
+
   const handleTempLaunchDateChange = (newValue: Date | null) => {
     setTempLaunchDate(newValue);
   };
@@ -100,6 +104,11 @@ const Missions = (): JSX.Element => {
   const handleSortFieldChange = (event: SyntheticEvent, value: SortField) => {
     setSortField(value);
   };
+  // const handleSortDescClick = (e) => {
+  //   setSortDesc(!sortDesc);
+  // };
+
+
   const handleSortDescClick = () => {
     setSortDesc(!sortDesc);
   };
@@ -128,11 +137,12 @@ const Missions = (): JSX.Element => {
               <FilterAltIcon />
             </IconButton>
             <ListMenu
-              options={["Date", "Title"]}
+              options={["Date", "Title", "Operator"]}
               endIcon={<SortIcon />}
               onSelectionChange={handleSortFieldChange}
             />
-            <IconButton onClick={handleSortDescClick}>
+            <IconButton 
+              onClick={handleSortDescClick}>
               {sortDesc ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />}
             </IconButton>
           </Grid>
@@ -220,7 +230,9 @@ const Missions = (): JSX.Element => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleNewMissionClose}>Cancel</Button>
-            <Button onClick={handleNewMissionClose}>Save</Button>
+            {/* <Button onClick={handleNewMissionClose}>Save</Button> */}
+            <Button onClick={handleNewMissionSave}>Save</Button>
+
           </DialogActions>
         </Dialog>
       </Container>
