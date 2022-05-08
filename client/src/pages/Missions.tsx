@@ -32,10 +32,14 @@ import {
   Sort as SortIcon,
   ArrowDownward as ArrowDownwardIcon,
   ArrowUpward as ArrowUpwardIcon,
+  SettingsOutlined,
 } from "@mui/icons-material";
-import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import {
+  DateTimePicker,
+  DateTimePickerProps,
+  LocalizationProvider,
+} from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-
 import { ListMenu } from "../components/ListMenu";
 
 type SortField = "Title" | "Date" | "Operator";
@@ -52,11 +56,11 @@ const getMissions = async (
 ): Promise<MissionsResponse> => {
   return await fetchGraphQL(
     `
-  {
+    query ($sortField: MissionSortFields!, $sortDesc: Boolean){
     Missions(
       sort: {
-        field: ${sortField}, desc: ${sortDesc ?? false}
-
+        field: $sortField,
+        desc: $sortDesc
       }
     ) {
       id
@@ -68,7 +72,55 @@ const getMissions = async (
     }
   }
   `,
-    []
+    { sortField: sortField, sortDesc: sortDesc }
+  );
+};
+
+const addMission = async (
+  title: String,
+  operator: String,
+  date: Date
+): Promise<MissionsResponse> => {
+  return await fetchGraphQL(
+    `
+    mutation ($title: String!, $operator:String!, $date:DateTime!){
+      createMission(mission: {
+        title: $title,
+        operator: $operator,
+        launch: {
+          date: $date,
+          vehicle: "Epsilon IV",
+          location: {
+            name: "Vandenberg SLC-6",
+            longitude: -120.6266,
+            latitude: -34.5813
+          }
+        },
+        orbit: {
+          periapsis: 700,
+          apoapsis: 422,
+          inclination: 90
+        },
+        payload: {
+          capacity: 28000,
+          available: 0
+        }
+      }
+        ){
+        id
+        title
+        operator
+        launch {
+          date
+        }
+      }
+    }
+  `,
+    {
+      title: title,
+      operator: operator,
+      date: date.toISOString(),
+    }
   );
 };
 
@@ -79,6 +131,21 @@ const Missions = (): JSX.Element => {
   const [sortDesc, setSortDesc] = useState<boolean>(false);
   const [sortField, setSortField] = useState<SortField>("Title");
   const [errMessage, setErrMessage] = useState<String | null>(null);
+  const [title, setTitle] = useState<String>("");
+  const [operator, setOperator] = useState<String>("");
+  const [date, setDate] = useState<Date | null>(null);
+
+  const newMission = async () => {
+    if (date) {
+      await addMission(title, operator, date);
+    }
+    try {
+      setMissions((await getMissions(sortField, sortDesc)).data.Missions);
+    } catch (error) {
+      setErrMessage("Failed to load missions.");
+      console.log(error);
+    }
+  };
 
   const handleErrClose = (event?: SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") return;
@@ -86,7 +153,6 @@ const Missions = (): JSX.Element => {
   };
 
   const handleNewMissionOpen = () => {
-    setTempLaunchDate(null);
     setNewMissionOpen(true);
   };
 
@@ -95,6 +161,7 @@ const Missions = (): JSX.Element => {
   };
 
   const handleNewMissionSave = () => {
+    newMission();
     setNewMissionOpen(false);
   };
 
@@ -102,13 +169,13 @@ const Missions = (): JSX.Element => {
     setTempLaunchDate(newValue);
   };
 
+  const handleLaunchDateChange = (newValue: Date | null) => {
+    setDate(newValue);
+  };
+
   const handleSortFieldChange = (event: SyntheticEvent, value: SortField) => {
     setSortField(value);
   };
-  // const handleSortDescClick = (e) => {
-  //   setSortDesc(!sortDesc);
-  // };
-
 
   const handleSortDescClick = () => {
     setSortDesc(!sortDesc);
@@ -123,7 +190,7 @@ const Missions = (): JSX.Element => {
         setErrMessage("Failed to load missions.");
         console.log(err);
       });
-  }, [sortField,sortDesc]);
+  }, [sortField, sortDesc]);
 
   return (
     <AppLayout title="Missions">
@@ -142,8 +209,7 @@ const Missions = (): JSX.Element => {
               endIcon={<SortIcon />}
               onSelectionChange={handleSortFieldChange}
             />
-            <IconButton 
-              onClick={handleSortDescClick}>
+            <IconButton onClick={handleSortDescClick}>
               {sortDesc ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />}
             </IconButton>
           </Grid>
@@ -198,7 +264,8 @@ const Missions = (): JSX.Element => {
                 <TextField
                   autoFocus
                   id="name"
-                  label="Name"
+                  label="Title"
+                  onChange={(e) => setTitle(e.target.value)}
                   variant="standard"
                   fullWidth
                 />
@@ -208,6 +275,9 @@ const Missions = (): JSX.Element => {
                   autoFocus
                   id="desc"
                   label="Description"
+                  ///
+                  onChange={(e) => setOperator(e.target.value)}
+                  ////
                   variant="standard"
                   fullWidth
                 />
@@ -220,7 +290,8 @@ const Missions = (): JSX.Element => {
                     minTime={new Date()}
                     label="Launch Date"
                     value={tempLaunchDate}
-                    onChange={handleTempLaunchDateChange}
+                    onAccept={handleTempLaunchDateChange}
+                    onChange={handleLaunchDateChange}
                     renderInput={(params) => (
                       <TextField variant="standard" {...params} />
                     )}
@@ -231,9 +302,7 @@ const Missions = (): JSX.Element => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleNewMissionClose}>Cancel</Button>
-            {/* <Button onClick={handleNewMissionClose}>Save</Button> */}
             <Button onClick={handleNewMissionSave}>Save</Button>
-
           </DialogActions>
         </Dialog>
       </Container>
