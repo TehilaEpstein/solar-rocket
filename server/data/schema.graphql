@@ -5,6 +5,9 @@ type Query {
 
 type Mutation {
   createMission(mission: MissionInput): Mission
+  editMission(id: String,title:String,operator:String, date:DateTime): Mission
+  deleteMission(id: String):Mission
+
 }
 
 input MissionInput {

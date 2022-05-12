@@ -81,10 +81,48 @@ const main = async () => {
       Mutation: {
         async createMission(obj, args) {
           const missions = await loadMissions();
-
           const mission = CreateMission(args.mission);
           missions.push(mission);
 
+          await writeFile(
+            path.join(DATA_DIR, DATA_FILE_MISSIONS),
+            JSON.stringify(missions),
+            "utf8"
+          );
+          return mission;
+        },
+
+        async deleteMission(obj, args) {
+          const missions = await loadMissions();
+          const mission = GetMissionById(missions, args.id);
+
+          missions.forEach((index) => {
+            if (index.id == args.id)
+              missions.splice(missions.indexOf(index), 1);
+          });
+          // if (mission) {
+          //   var myIndex = missions.indexOf(mission);
+          //   missions.splice(myIndex);
+          // }
+
+          await writeFile(
+            path.join(DATA_DIR, DATA_FILE_MISSIONS),
+            JSON.stringify(missions),
+            "utf8"
+          );
+
+          return mission;
+        },
+        async editMission(obj, args) {
+
+          const missions = await loadMissions();
+          const mission = GetMissionById(missions, args.id);
+
+          if (mission) {
+            mission.title = args.title;
+            mission.operator = args.operator;
+            mission.launch.date = args.date;
+          }
           await writeFile(
             path.join(DATA_DIR, DATA_FILE_MISSIONS),
             JSON.stringify(missions),
@@ -96,22 +134,13 @@ const main = async () => {
     },
   });
 
-  app.get("/readme", 
-    async (req : Request, res: Response ) => {
-      const readme : String = await readFile(path.join(__dirname, "../../README.md"), "utf8")
-      res.send(readme);
-    }
-  );
-
-
-  app.get("/readme", 
-  async (req : Request, res: Response ) => {
-    const readme : String = await readFile(path.join(__dirname, "../../README.md"), "utf8")
+  app.get("/readme", async (req: Request, res: Response) => {
+    const readme: String = await readFile(
+      path.join(__dirname, "../../README.md"),
+      "utf8"
+    );
     res.send(readme);
-  }
-);
-
-
+  });
 
   app.use(
     "/graphql",
